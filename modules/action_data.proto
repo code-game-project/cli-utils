@@ -1,0 +1,15 @@
+syntax = "proto3";
+package modules;
+option go_package = "./modules";
+
+enum ProjectType {
+	CLIENT = 0;
+	SERVER = 1;
+}
+
+message action_create_data {
+	ProjectType projectType = 1;
+	string language = 2;
+	string gameName = 3;
+	optional string url = 4; // only needed for clients
+}
