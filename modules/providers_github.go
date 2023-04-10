@@ -21,19 +21,27 @@ var ErrFileNotFound = errors.New("file not found")
 
 type ProviderGithub struct{}
 
-func (p *ProviderGithub) ValidateProviderVars(providerVars map[string]string) []string {
-	errs := make([]string, 0)
+func (p *ProviderGithub) Name() string {
+	return "github"
+}
+
+func (p *ProviderGithub) ValidateProviderVars(providerVars map[string]any) []string {
+	var errs []string
 	if _, ok := providerVars["owner"]; !ok {
 		errs = append(errs, "missing 'owner' field")
+	} else if _, ok := providerVars["owner"].(string); !ok {
+		errs = append(errs, "value of 'owner' field must be a string")
 	}
 	if _, ok := providerVars["repository"]; !ok {
 		errs = append(errs, "missing 'repository' field")
+	} else if _, ok := providerVars["repository"].(string); !ok {
+		errs = append(errs, "value of 'repository' field must be a string")
 	}
 	return errs
 }
 
-func (p *ProviderGithub) FindExactVersion(providerVars map[string]string, version versions.Version) (versions.Version, error) {
-	tag, err := p.findTagByVersion(providerVars["owner"], providerVars["repository"], version)
+func (p *ProviderGithub) FindExactVersion(providerVars map[string]any, version versions.Version) (versions.Version, error) {
+	tag, err := p.findTagByVersion(providerVars["owner"].(string), providerVars["repository"].(string), version)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +52,7 @@ func (p *ProviderGithub) FindExactVersion(providerVars map[string]string, versio
 	return tagVersion, nil
 }
 
-func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map[string]string, version versions.Version) error {
+func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map[string]any, version versions.Version) error {
 	downloadFileName := fmt.Sprintf("%s-%s-%s.tar.gz", providerVars["repository"], runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
 		downloadFileName = fmt.Sprintf("%s-%s-%s.zip", providerVars["repository"], runtime.GOOS, runtime.GOARCH)
@@ -56,9 +64,7 @@ func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map
 	}
 	defer file.Close()
 
-	fileName := providerVars["repository"]
-	// TODO remove
-	fileName = strings.Replace(fileName, "codegame-cli-", "codegame-", 1)
+	fileName := providerVars["repository"].(string)
 
 	if runtime.GOOS == "windows" {
 		err = unzipFile(file, fileName+".exe", target)

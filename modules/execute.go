@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,12 +14,42 @@ import (
 type Action string
 
 const (
-	ActionStatus Action = "status"
+	ActionInfo   Action = "info"
 	ActionCreate Action = "create"
 	ActionUpdate Action = "update"
 	ActionRun    Action = "run"
 	ActionBuild  Action = "build"
 )
+
+type ModuleInfo struct {
+	Actions          []Action                      `json:"actions"`
+	LibraryVersions  map[string][]versions.Version `json:"library_versions"`
+	ApplicationTypes []string                      `json:"application_types"`
+}
+
+func execInfo(modulePath string) (ModuleInfo, error) {
+	cmd := exec.Command(modulePath, string(ActionInfo))
+	cmd.Stderr = os.Stderr
+	output, err := cmd.Output()
+	if err != nil {
+		return ModuleInfo{}, fmt.Errorf("failed to execute module: %w", err)
+	}
+	var resp ModuleInfo
+	err = json.Unmarshal(output, &resp)
+	if err != nil {
+		return ModuleInfo{}, fmt.Errorf("failed to decode info response: %w", err)
+	}
+	if resp.Actions == nil {
+		return ModuleInfo{}, fmt.Errorf("invalid info response: missing 'actions' field")
+	}
+	if resp.LibraryVersions == nil {
+		return ModuleInfo{}, fmt.Errorf("invalid info response: missing 'library_versions' field")
+	}
+	if resp.ApplicationTypes == nil {
+		return ModuleInfo{}, fmt.Errorf("invalid info response: missing 'application_types' field")
+	}
+	return resp, nil
+}
 
 func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion versions.Version) error {
 	libraryVersion, err := m.findLibraryVersionByCGVersion(ProjectType_CLIENT, cgVersion)

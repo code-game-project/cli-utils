@@ -32,16 +32,16 @@ type Module struct {
 	installedExecutables   map[string]string // module version -> executable path
 
 	provider     provider
-	providerVars map[string]string
+	providerVars map[string]any
 }
 
 var rawModules map[string]rawModule
 
 type rawModule struct {
-	DisplayName               string            `json:"display_name"`
-	Source                    map[string]string `json:"source"`
-	LibraryToModuleVersions   json.RawMessage   `json:"library_to_module_versions"`
-	CodeGameToLibraryVersions json.RawMessage   `json:"codegame_to_library_versions"`
+	DisplayName               string          `json:"display_name"`
+	Source                    map[string]any  `json:"source"`
+	LibraryToModuleVersions   json.RawMessage `json:"library_to_module_versions"`
+	CodeGameToLibraryVersions json.RawMessage `json:"codegame_to_library_versions"`
 }
 
 func LoadModule(lang string) (*Module, error) {
@@ -59,22 +59,30 @@ func LoadModule(lang string) (*Module, error) {
 		return nil, fmt.Errorf("no module available for lang '%s'", lang)
 	}
 
+	if m.Source == nil {
+		return nil, errors.New("missing 'source' field")
+	}
+
 	module := &Module{
-		Lang:         lang,
-		DisplayName:  m.DisplayName,
-		providerVars: make(map[string]string),
-	}
-	err := module.loadVersions(m.LibraryToModuleVersions, m.CodeGameToLibraryVersions)
-	if err != nil {
-		return nil, err
-	}
-
-	err = module.loadInstalledVersions(m.Source)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load installed versions: %w", err)
+		Lang:                   lang,
+		DisplayName:            m.DisplayName,
+		providerVars:           make(map[string]any),
+		clientLibToModVersions: make(map[string]string),
+		clientCGToLibVersions:  make(map[string]string),
+		serverLibToModVersions: make(map[string]string),
+		serverCGToLibVersions:  make(map[string]string),
+		installedExecutables:   make(map[string]string),
 	}
 
-	providerName := m.Source["provider"]
+	providerNameAny, ok := m.Source["provider"]
+	if !ok {
+		return nil, errors.New("missing 'source.provider' field")
+	}
+	providerName, ok := providerNameAny.(string)
+	if !ok {
+		return nil, errors.New("value of 'source.provider' field must be a string")
+	}
+
 	prov, ok := providers[providerName]
 	if !ok {
 		return nil, fmt.Errorf("unknown module provider: %s", providerName)
@@ -92,6 +100,16 @@ func LoadModule(lang string) (*Module, error) {
 		return nil, fmt.Errorf("invalid module source: %s", strings.Join(errs, ", "))
 	}
 
+	err := module.loadVersions(m.LibraryToModuleVersions, m.CodeGameToLibraryVersions)
+	if err != nil {
+		return nil, err
+	}
+
+	err = module.loadInstalledVersions()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load installed versions: %w", err)
+	}
+
 	modules[lang] = module
 
 	return module, nil
@@ -99,9 +117,12 @@ func LoadModule(lang string) (*Module, error) {
 
 func (m *Module) loadVersions(libraryToModuleVersions, codegameToLibraryVersions json.RawMessage) error {
 	var err error
-	m.clientLibToModVersions, m.serverLibToModVersions, err = loadVersionMap(libraryToModuleVersions)
-	if err != nil {
-		return fmt.Errorf("failed to load library version compatibility list: %w", err)
+
+	if m.provider.Name() != "local" {
+		m.clientLibToModVersions, m.serverLibToModVersions, err = loadVersionMap(libraryToModuleVersions)
+		if err != nil {
+			return fmt.Errorf("failed to load library version compatibility list: %w", err)
+		}
 	}
 
 	m.clientCGToLibVersions, m.serverCGToLibVersions, err = loadVersionMap(codegameToLibraryVersions)
@@ -168,22 +189,14 @@ func loadJSONObjectInlineOrLocalOrRemote[T any](jsonData json.RawMessage) (T, er
 	return object, nil
 }
 
-func (m *Module) loadInstalledVersions(source map[string]string) error {
-	if source == nil {
-		return errors.New("missing 'source' field")
-	}
-	provider, ok := source["provider"]
-	if !ok {
-		return errors.New("missing 'source.provider' field")
-	}
-	if provider == "local" {
-		// TODO: determine version using the 'status' action
-		// TODO: handle version specific paths
-		panic("local provider not implemented")
+func (m *Module) loadInstalledVersions() error {
+	var err error
+	if m.provider.Name() == "local" {
+		err = m.loadLocalModules()
 	} else {
 		m.installedExecutables = installedBinaries(m.Lang)
 	}
-	return nil
+	return err
 }
 
 func loadModules() error {

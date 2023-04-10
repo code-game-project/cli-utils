@@ -1,5 +1,5 @@
 # cli-utils
-![CodeGame Version](https://img.shields.io/badge/CodeGame-v0.8+-orange)
+![CodeGame Version](https://img.shields.io/badge/CodeGame-v0.7+-orange)
 
 Utility packages for developing [codegame-cli](https://github.com/code-game-project/codegame-cli) and its modules.
 

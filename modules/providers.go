@@ -11,10 +11,12 @@ var ErrVersionNotFound = errors.New("version not found")
 
 var providers = map[string]provider{
 	"github": &ProviderGithub{},
+	"local":  &ProviderLocal{},
 }
 
 type provider interface {
-	ValidateProviderVars(providerVars map[string]string) (errs []string)
-	FindExactVersion(providerVars map[string]string, version versions.Version) (versions.Version, error)
-	DownloadModuleBinary(target io.Writer, providerVars map[string]string, version versions.Version) error
+	Name() string
+	ValidateProviderVars(providerVars map[string]any) (errs []string)
+	FindExactVersion(providerVars map[string]any, version versions.Version) (versions.Version, error)
+	DownloadModuleBinary(target io.Writer, providerVars map[string]any, version versions.Version) error
 }
