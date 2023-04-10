@@ -15,5 +15,6 @@ var providers = map[string]provider{
 
 type provider interface {
 	ValidateProviderVars(providerVars map[string]string) (errs []string)
-	DownloadModuleBinary(target io.Writer, providerVars map[string]string, version versions.Version) (versions.Version, error)
+	FindExactVersion(providerVars map[string]string, version versions.Version) (versions.Version, error)
+	DownloadModuleBinary(target io.Writer, providerVars map[string]string, version versions.Version) error
 }

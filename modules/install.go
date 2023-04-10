@@ -21,26 +21,39 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 		return "", fmt.Errorf("failed to create module binary directory: %w", err)
 	}
 
-	tempBinPath := filepath.Join(dirName, strings.ReplaceAll(moduleVersion.String(), ".", "-")+".temp")
-
-	file, err := os.OpenFile(tempBinPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
+	version, err := m.provider.FindExactVersion(m.providerVars, moduleVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to create module binary file: %w", err)
-	}
-	version, err := m.provider.DownloadModuleBinary(file, m.providerVars, moduleVersion)
-	file.Close()
-	if err != nil {
-		return "", fmt.Errorf("failed to download module binary: %s", err)
+		return "", fmt.Errorf("failed to determine exact module version: %w", err)
 	}
 
-	binPath := filepath.Join(dirName, strings.ReplaceAll(version.String(), ".", "-"))
-	if runtime.GOOS == "windows" {
-		binPath += ".exe"
-	}
+	var binPath string
+	if p, ok := m.installedExecutables[version.String()]; ok {
+		binPath = p
+	} else {
+		tempBinPath := filepath.Join(dirName, strings.ReplaceAll(moduleVersion.String(), ".", "-")+".temp")
+		file, err := os.OpenFile(tempBinPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
+		if err != nil {
+			return "", fmt.Errorf("failed to create module binary file: %w", err)
+		}
+		defer func() {
+			os.Remove(tempBinPath)
+		}()
 
-	err = os.Rename(tempBinPath, binPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to create module binary file: %w", err)
+		err = m.provider.DownloadModuleBinary(file, m.providerVars, version)
+		file.Close()
+		if err != nil {
+			return "", fmt.Errorf("failed to download module binary: %s", err)
+		}
+
+		binPath = filepath.Join(dirName, strings.ReplaceAll(version.String(), ".", "-"))
+		if runtime.GOOS == "windows" {
+			binPath += ".exe"
+		}
+
+		err = os.Rename(tempBinPath, binPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to create module binary file: %w", err)
+		}
 	}
 
 	return binPath, nil

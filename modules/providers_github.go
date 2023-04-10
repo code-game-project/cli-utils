@@ -31,7 +31,7 @@ func (p *ProviderGithub) ValidateProviderVars(providerVars map[string]string) []
 	return errs
 }
 
-func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map[string]string, version versions.Version) (versions.Version, error) {
+func (p *ProviderGithub) FindExactVersion(providerVars map[string]string, version versions.Version) (versions.Version, error) {
 	tag, err := p.findTagByVersion(providerVars["owner"], providerVars["repository"], version)
 	if err != nil {
 		return nil, err
@@ -40,28 +40,34 @@ func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map
 	if err != nil {
 		return nil, fmt.Errorf("invalid tag version: %w", err)
 	}
+	return tagVersion, nil
+}
 
+func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map[string]string, version versions.Version) error {
 	downloadFileName := fmt.Sprintf("%s-%s-%s.tar.gz", providerVars["repository"], runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
 		downloadFileName = fmt.Sprintf("%s-%s-%s.zip", providerVars["repository"], runtime.GOOS, runtime.GOARCH)
 	}
 
-	file, err := request.FetchFile(fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", providerVars["owner"], providerVars["repository"], tag, downloadFileName))
+	file, err := request.FetchFile(fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", providerVars["owner"], providerVars["repository"], fmt.Sprintf("v%s", version), downloadFileName))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
 	fileName := providerVars["repository"]
+	// TODO remove
+	fileName = strings.Replace(fileName, "codegame-cli-", "codegame-", 1)
+
 	if runtime.GOOS == "windows" {
 		err = unzipFile(file, fileName+".exe", target)
 	} else {
 		err = untargzFile(file, fileName, target)
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return tagVersion, nil
+	return nil
 }
 
 func (p *ProviderGithub) findTagByVersion(owner, repo string, version versions.Version) (string, error) {
