@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/code-game-project/cli-utils/config"
 	"github.com/code-game-project/cli-utils/request"
@@ -148,7 +149,7 @@ func loadJSONObjectInlineOrLocalOrRemote[T any](jsonData json.RawMessage) (T, er
 	err := json.Unmarshal(jsonData, &uri)
 	if err == nil {
 		if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-			file, err = request.FetchFile(uri)
+			file, err = request.FetchFile(uri, 24*time.Hour)
 			if err != nil {
 				return object, err
 			}
