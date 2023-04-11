@@ -61,7 +61,7 @@ func FetchFile(url string, cacheMaxAge time.Duration) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create http request: %w", err)
 	}
-	if cacheMaxAge > 0 {
+	if _, err = os.Stat(cacheFilePath); err == nil {
 		loadETag(url, req)
 	}
 	resp, err := httpClient.Do(req)
