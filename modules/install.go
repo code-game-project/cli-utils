@@ -18,12 +18,12 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 	dirName := filepath.Join(moduleBinPath, m.Lang)
 	err := os.MkdirAll(dirName, 0o755)
 	if err != nil {
-		return "", fmt.Errorf("failed to create module binary directory: %w", err)
+		return "", fmt.Errorf("create module binary directory: %w", err)
 	}
 
 	version, err := m.provider.FindExactVersion(m.providerVars, moduleVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to determine exact module version: %w", err)
+		return "", fmt.Errorf("determine exact module version: %w", err)
 	}
 
 	var binPath string
@@ -33,7 +33,7 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 		tempBinPath := filepath.Join(dirName, strings.ReplaceAll(moduleVersion.String(), ".", "-")+".temp")
 		file, err := os.OpenFile(tempBinPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
 		if err != nil {
-			return "", fmt.Errorf("failed to create module binary file: %w", err)
+			return "", fmt.Errorf("create module binary file: %w", err)
 		}
 		defer func() {
 			os.Remove(tempBinPath)
@@ -42,7 +42,7 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 		err = m.provider.DownloadModuleBinary(file, m.providerVars, version)
 		file.Close()
 		if err != nil {
-			return "", fmt.Errorf("failed to download module binary: %s", err)
+			return "", fmt.Errorf("download module binary: %s", err)
 		}
 
 		binPath = filepath.Join(dirName, strings.ReplaceAll(version.String(), ".", "-"))
@@ -52,7 +52,7 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 
 		err = os.Rename(tempBinPath, binPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to create module binary file: %w", err)
+			return "", fmt.Errorf("create module binary file: %w", err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (m *Module) findCompatibleModuleVersion(projectType ProjectType, libraryVer
 
 	v, err := versions.FindCompatibleInMap(libraryVersion, versionMap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find compatible module version: %w", err)
+		return nil, fmt.Errorf("find compatible module version: %w", err)
 	}
 	return v, nil
 }
@@ -128,7 +128,7 @@ func (m *Module) findLibraryVersionByCGVersion(projectType ProjectType, cgVersio
 
 	v, err := versions.FindCompatibleInMap(cgVersion, versionMap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find compatible library version: %w", err)
+		return nil, fmt.Errorf("find compatible library version: %w", err)
 	}
 	return v, nil
 }

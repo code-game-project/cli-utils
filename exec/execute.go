@@ -5,7 +5,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/code-game-project/cli-utils/feedback"
 )
+
+const FeedbackPkg = feedback.Package("exec")
 
 func IsInstalled(programName string) bool {
 	_, err := exec.LookPath(programName)
@@ -40,7 +44,7 @@ func execute(hidden bool, programName string, args ...string) (string, error) {
 	}
 
 	if err != nil {
-		err = fmt.Errorf("failed to execute '%s %s': %w", programName, strings.Join(args, " "), err)
+		err = fmt.Errorf("execute '%s %s': %w", programName, strings.Join(args, " "), err)
 	}
 
 	return string(out), err

@@ -1,10 +1,12 @@
 package exec
 
 import (
-	"fmt"
+	"errors"
 	"os/exec"
 	"runtime"
 )
+
+var ErrUnsupportedPlatform = errors.New("unsupported platform")
 
 // Opens `url` in the default browser.
 func OpenInBrowser(url string) error {
@@ -16,6 +18,6 @@ func OpenInBrowser(url string) error {
 	case "darwin":
 		return exec.Command("open", url).Start()
 	default:
-		return fmt.Errorf("unsupported platform")
+		return ErrUnsupportedPlatform
 	}
 }

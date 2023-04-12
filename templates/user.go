@@ -6,7 +6,10 @@ import (
 	"strings"
 
 	"github.com/code-game-project/cli-utils/exec"
+	"github.com/code-game-project/cli-utils/feedback"
 )
+
+const FeedbackPkg = feedback.Package("templates")
 
 var ErrNameNotFound = errors.New("couldn't determine username")
 

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/code-game-project/cli-utils/feedback"
 	"github.com/code-game-project/cli-utils/request"
 	"github.com/code-game-project/cli-utils/versions"
 )
@@ -58,7 +59,11 @@ func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map
 		downloadFileName = fmt.Sprintf("%s-%s-%s.zip", providerVars["repository"], runtime.GOOS, runtime.GOARCH)
 	}
 
-	file, err := request.FetchFile(fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", providerVars["owner"], providerVars["repository"], fmt.Sprintf("v%s", version), downloadFileName), 0)
+	feedback.InterceptProgress(request.FeedbackPkg, func(_ feedback.Package, _, _ string, current, total float64) {
+		feedback.Progress(FeedbackPkg, fmt.Sprintf("download %s", providerVars["repository"]), fmt.Sprintf("Downloading module %s (%.2fkB/%.2fkB)...", providerVars["repository"], current/1000, total/1000), current, total)
+	})
+	file, err := request.FetchFile(fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", providerVars["owner"], providerVars["repository"], fmt.Sprintf("v%s", version), downloadFileName), 0, true)
+	defer feedback.UninterceptProgress(request.FeedbackPkg)
 	if err != nil {
 		return err
 	}
@@ -83,7 +88,7 @@ func (p *ProviderGithub) findTagByVersion(owner, repo string, version versions.V
 	}
 	res, err := request.FetchJSON[response](fmt.Sprintf("https://api.github.com/repos/%s/%s/tags", owner, repo), 24*time.Hour)
 	if err != nil {
-		return "", fmt.Errorf("failed to find GitHub tag by version: %w", err)
+		return "", fmt.Errorf("find GitHub tag by version: %w", err)
 	}
 	for _, tag := range res {
 		if strings.HasPrefix(tag.Name, "v"+version.String()) {

@@ -12,8 +12,11 @@ import (
 	"time"
 
 	"github.com/code-game-project/cli-utils/config"
+	"github.com/code-game-project/cli-utils/feedback"
 	"github.com/code-game-project/cli-utils/request"
 )
+
+const FeedbackPkg = feedback.Package("modules")
 
 var (
 	ErrUnsupportedProjectType     = errors.New("unsupported project type")
@@ -107,7 +110,7 @@ func LoadModule(lang string) (*Module, error) {
 
 	err = module.loadInstalledVersions()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load installed versions: %w", err)
+		return nil, fmt.Errorf("load installed versions: %w", err)
 	}
 
 	modules[lang] = module
@@ -121,13 +124,13 @@ func (m *Module) loadVersions(libraryToModuleVersions, codegameToLibraryVersions
 	if m.provider.Name() != "local" {
 		m.clientLibToModVersions, m.serverLibToModVersions, err = loadVersionMap(libraryToModuleVersions)
 		if err != nil {
-			return fmt.Errorf("failed to load library version compatibility list: %w", err)
+			return fmt.Errorf("load library version compatibility list: %w", err)
 		}
 	}
 
 	m.clientCGToLibVersions, m.serverCGToLibVersions, err = loadVersionMap(codegameToLibraryVersions)
 	if err != nil {
-		return fmt.Errorf("failed to load codegame version compatibility list: %w", err)
+		return fmt.Errorf("load codegame version compatibility list: %w", err)
 	}
 
 	return nil
@@ -170,7 +173,7 @@ func loadJSONObjectInlineOrLocalOrRemote[T any](jsonData json.RawMessage) (T, er
 	err := json.Unmarshal(jsonData, &uri)
 	if err == nil {
 		if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-			file, err = request.FetchFile(uri, 24*time.Hour)
+			file, err = request.FetchFile(uri, 24*time.Hour, false)
 			if err != nil {
 				return object, err
 			}
@@ -202,13 +205,13 @@ func (m *Module) loadInstalledVersions() error {
 func loadModules() error {
 	file, err := os.Open(filepath.Join(config.ConfigDir(), "lang_modules.json"))
 	if err != nil {
-		return fmt.Errorf("failed to open language modules config file: %w", err)
+		return fmt.Errorf("open language modules config file: %w", err)
 	}
 	defer file.Close()
 
 	err = json.NewDecoder(file).Decode(&rawModules)
 	if err != nil {
-		return fmt.Errorf("failed to decode language modules config file: %w", err)
+		return fmt.Errorf("decode language modules config file: %w", err)
 	}
 	return nil
 }

@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/code-game-project/cli-utils/feedback"
 )
+
+const FeedbackPkg = feedback.Package("versions")
 
 var (
 	ErrInvalidVersion      = errors.New("invalid version")

@@ -72,7 +72,7 @@ func (m *Module) loadLocalModules() error {
 func (m *Module) loadLocalModulePath(path string) error {
 	info, err := execInfo(path)
 	if err != nil {
-		return fmt.Errorf("failed to receive module version of '%s': %w", path, err)
+		return fmt.Errorf("receive module version of '%s': %w", path, err)
 	}
 
 	id := strconv.Itoa(len(m.installedExecutables))

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/code-game-project/cli-utils/config"
+	"github.com/code-game-project/cli-utils/feedback"
 )
 
 // component name -> version (e.g. CG/CGE/...) -> path to compatible binary
@@ -20,6 +21,7 @@ func loadOverrides(componentName string) map[string]string {
 		defer overridesFile.Close()
 		err = json.NewDecoder(overridesFile).Decode(&componentOverrides)
 		if err != nil {
+			feedback.Warn(FeedbackPkg, "invalid component_overrides.json: %s", err)
 			return nil
 		}
 	}

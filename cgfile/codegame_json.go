@@ -2,9 +2,14 @@ package cgfile
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/code-game-project/cli-utils/feedback"
 )
+
+const FeedbackPkg = feedback.Package("cgfile")
 
 type CodeGameFileData struct {
 	Game        string         `json:"game"`
@@ -18,7 +23,7 @@ type CodeGameFileData struct {
 func Load(projectRoot string) (*CodeGameFileData, error) {
 	file, err := os.Open(filepath.Join(projectRoot, ".codegame.json"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open .codegame.json: %w", err)
 	}
 	defer file.Close()
 
@@ -27,7 +32,7 @@ func Load(projectRoot string) (*CodeGameFileData, error) {
 	}
 	err = json.NewDecoder(file).Decode(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode .codegame.json: %w", err)
 	}
 
 	return data, nil

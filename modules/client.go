@@ -25,13 +25,13 @@ func readActionData() ([]byte, error) {
 	path := os.Getenv("CG_MODULE_ACTION_DATA_FILE")
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open action data file '%s': %w", path, err)
+		return nil, fmt.Errorf("open action data file '%s': %w", path, err)
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read action data file '%s': %w", path, err)
+		return nil, fmt.Errorf("read action data file '%s': %w", path, err)
 	}
 	return data, nil
 }

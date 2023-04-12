@@ -17,6 +17,7 @@ import (
 
 	"github.com/adrg/xdg"
 
+	"github.com/code-game-project/cli-utils/feedback"
 	"github.com/code-game-project/cli-utils/request"
 	"github.com/code-game-project/cli-utils/versions"
 )
@@ -29,12 +30,13 @@ var (
 func findLatestCompatibleVersionSupportedByComponent(componentName string, version versions.Version) (component, supported versions.Version, err error) {
 	versionMap, err := request.FetchJSON[map[string]versions.Version](fmt.Sprintf("https://raw.githubusercontent.com/code-game-project/%s/main/versions.json", componentName), 24*time.Hour)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to fetch version map: %w", err)
+		return nil, nil, fmt.Errorf("fetch version map: %w", err)
 	}
 	for sup, comp := range versionMap {
 		s, err := versions.Parse(sup)
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid version map: %w", err)
+			feedback.Warn(FeedbackPkg, "invalid version in version map for component '%s': %s", componentName, err)
+			continue
 		}
 		if versions.Compare(supported, s) == 1 && s.IsCompatible(version) {
 			supported = s
@@ -52,7 +54,8 @@ func findLatestCompatibleVersionSupportedByComponentInOverrides(componentName st
 	for sup, path := range overrides {
 		v, err := versions.Parse(sup)
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to load %s overrides: %w", componentName, err)
+			feedback.Warn(FeedbackPkg, "invalid version in version overrides for component '%s': %s", componentName, err)
+			continue
 		}
 		if versions.Compare(supported, v) == 1 && v.IsCompatible(version) {
 			supported = v
@@ -72,12 +75,12 @@ func install(componentName string, version versions.Version) (string, error) {
 	dirName := filepath.Join(componentBinPath, componentName)
 	err := os.MkdirAll(dirName, 0o755)
 	if err != nil {
-		return "", fmt.Errorf("failed to create component binary directory: %w", err)
+		return "", fmt.Errorf("create component binary directory for %s: %w", componentName, err)
 	}
 
 	tag, err := findGitHubTagByVersion(componentName, version)
 	if err != nil {
-		return "", fmt.Errorf("failed to find compatible tag: %w", err)
+		return "", fmt.Errorf("find compatible tag for %s: %w", componentName, err)
 	}
 
 	binPath := filepath.Join(dirName, strings.ReplaceAll(strings.TrimPrefix(tag, "v"), ".", "-"))
@@ -93,9 +96,13 @@ func install(componentName string, version versions.Version) (string, error) {
 		downloadFileName = fmt.Sprintf("%s-%s-%s.zip", componentName, runtime.GOOS, runtime.GOARCH)
 	}
 
-	file, err := request.FetchFile(fmt.Sprintf("https://github.com/code-game-project/%s/releases/download/%s/%s", componentName, tag, downloadFileName), 0)
+	feedback.InterceptProgress(request.FeedbackPkg, func(_ feedback.Package, _, _ string, current, total float64) {
+		feedback.Progress(FeedbackPkg, fmt.Sprintf("download %s", componentName), fmt.Sprintf("Downloading component %s (%.2fkB/%.2fkB)...", componentName, current/1000, total/1000), current, total)
+	})
+	file, err := request.FetchFile(fmt.Sprintf("https://github.com/code-game-project/%s/releases/download/%s/%s", componentName, tag, downloadFileName), 0, true)
+	defer feedback.UninterceptProgress(request.FeedbackPkg)
 	if err != nil {
-		return "", fmt.Errorf("failed to download %s: %w", componentName, err)
+		return "", fmt.Errorf("download %s: %w", componentName, err)
 	}
 	defer file.Close()
 
@@ -105,7 +112,7 @@ func install(componentName string, version versions.Version) (string, error) {
 		err = untargzFile(file, componentName, binPath)
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to uncompress %s: %w", componentName, err)
+		return "", fmt.Errorf("uncompress %s: %w", componentName, err)
 	}
 	return binPath, nil
 }
@@ -116,7 +123,7 @@ func findGitHubTagByVersion(componentName string, version versions.Version) (str
 	}
 	res, err := request.FetchJSON[response](fmt.Sprintf("https://api.github.com/repos/code-game-project/%s/tags", componentName), 24*time.Hour)
 	if err != nil {
-		return "", fmt.Errorf("failed to find GitHub tag by version: %w", err)
+		return "", fmt.Errorf("find GitHub tag by version: %w", err)
 	}
 	for _, tag := range res {
 		if strings.HasPrefix(tag.Name, "v"+version.String()) {

@@ -32,12 +32,12 @@ func execInfo(modulePath string) (ModuleInfo, error) {
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return ModuleInfo{}, fmt.Errorf("failed to execute module: %w", err)
+		return ModuleInfo{}, fmt.Errorf("execute module: %w", err)
 	}
 	var resp ModuleInfo
 	err = json.Unmarshal(output, &resp)
 	if err != nil {
-		return ModuleInfo{}, fmt.Errorf("failed to decode info response: %w", err)
+		return ModuleInfo{}, fmt.Errorf("decode info response: %w", err)
 	}
 	if resp.Actions == nil {
 		return ModuleInfo{}, fmt.Errorf("invalid info response: missing 'actions' field")
@@ -84,7 +84,7 @@ func (m *Module) ExecCreateServer(gameName, language string) error {
 func (m *Module) execute(modVersion versions.Version, projectType ProjectType, action Action, actionData proto.Message) error {
 	path, err := m.install(modVersion)
 	if err != nil {
-		return fmt.Errorf("failed to install module: %w", err)
+		return fmt.Errorf("install module: %w", err)
 	}
 
 	cmd := exec.Command(path, string(action))
@@ -96,17 +96,17 @@ func (m *Module) execute(modVersion versions.Version, projectType ProjectType, a
 	if actionData != nil {
 		data, err = proto.Marshal(actionData)
 		if err != nil {
-			return fmt.Errorf("failed to encode action data: %w", err)
+			return fmt.Errorf("encode action data: %w", err)
 		}
 
 		file, err := os.CreateTemp(os.TempDir(), "codegame-module-action-data-*")
 		if err != nil {
-			return fmt.Errorf("failed to create temporary file for action data: %w", err)
+			return fmt.Errorf("create temporary file for action data: %w", err)
 		}
 
 		_, err = file.Write(data)
 		if err != nil {
-			return fmt.Errorf("failed to write action data to temporary file: %w", err)
+			return fmt.Errorf("write action data to temporary file: %w", err)
 		}
 
 		cmd.Env = append(cmd.Env, "CG_MODULE_ACTION_DATA_FILE="+file.Name())
