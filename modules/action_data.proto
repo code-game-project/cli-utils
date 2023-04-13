@@ -12,4 +12,5 @@ message action_create_data {
 	string language = 2;
 	string gameName = 3;
 	optional string url = 4; // only needed for clients
+	optional string libraryVersion = 5; // empty -> use latest
 }

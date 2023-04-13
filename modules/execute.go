@@ -56,16 +56,18 @@ func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion 
 	if err != nil {
 		return ErrUnsupportedCodeGameVersion
 	}
-
 	modVersion, err := m.findCompatibleModuleVersion(ProjectType_CLIENT, libraryVersion)
 	if err != nil {
 		return err
 	}
+
+	libVersionStr := libraryVersion.String()
 	return m.execute(modVersion, ProjectType_CLIENT, ActionCreate, &ActionCreateData{
-		Language:    language,
-		GameName:    gameName,
-		ProjectType: ProjectType_CLIENT,
-		Url:         &gameURL,
+		Language:       language,
+		GameName:       gameName,
+		ProjectType:    ProjectType_CLIENT,
+		Url:            &gameURL,
+		LibraryVersion: &libVersionStr,
 	})
 }
 
