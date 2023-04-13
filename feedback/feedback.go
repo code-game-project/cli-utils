@@ -2,27 +2,30 @@ package feedback
 
 import (
 	"fmt"
+
+	"github.com/code-game-project/cli-utils/cli"
 )
 
 const FeedbackPkg = Package("feedback")
 
 type Package string
 
-type Severity string
+type Severity int
 
 const (
-	SeverityDebug Severity = "debug"
-	SeverityInfo  Severity = "info"
-	SeverityWarn  Severity = "warn"
-	SeverityError Severity = "error"
-	SeverityFatal Severity = "fatal"
+	SeverityDebug Severity = iota
+	SeverityInfo
+	SeverityWarn
+	SeverityError
+	SeverityFatal
+	SeverityNone
 )
 
-type ProgressCallback func(pkg Package, key, message string, current, total float64)
+type ProgressCallback func(pkg Package, key, message string, current, total int64, unit cli.Unit)
 
 type FeedbackReceiver interface {
 	Log(pkg Package, severity Severity, message string)
-	Progress(pkg Package, process, message string, current, total float64)
+	Progress(pkg Package, process, message string, current, total int64, unit cli.Unit)
 }
 
 var (
@@ -32,16 +35,16 @@ var (
 	interceptProgress   map[Package]ProgressCallback = make(map[Package]ProgressCallback)
 )
 
-func Progress(pkg Package, process, message string, current, total float64) {
+func Progress(pkg Package, process, message string, current, total int64, unit cli.Unit) {
 	if !enabled {
 		return
 	}
 	if pr, ok := interceptProgress[pkg]; ok {
 		if pr != nil {
-			pr(pkg, process, message, current, total)
+			pr(pkg, process, message, current, total, unit)
 		}
 	} else {
-		feedbackReceiver.Progress(pkg, process, message, current, total)
+		feedbackReceiver.Progress(pkg, process, message, current, total, unit)
 	}
 }
 

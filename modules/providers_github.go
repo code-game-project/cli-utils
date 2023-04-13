@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/code-game-project/cli-utils/cli"
 	"github.com/code-game-project/cli-utils/feedback"
 	"github.com/code-game-project/cli-utils/request"
 	"github.com/code-game-project/cli-utils/versions"
@@ -59,8 +60,8 @@ func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map
 		downloadFileName = fmt.Sprintf("%s-%s-%s.zip", providerVars["repository"], runtime.GOOS, runtime.GOARCH)
 	}
 
-	feedback.InterceptProgress(request.FeedbackPkg, func(_ feedback.Package, _, _ string, current, total float64) {
-		feedback.Progress(FeedbackPkg, fmt.Sprintf("download %s", providerVars["repository"]), fmt.Sprintf("Downloading module %s (%.2fkB/%.2fkB)...", providerVars["repository"], current/1000, total/1000), current, total)
+	feedback.InterceptProgress(request.FeedbackPkg, func(_ feedback.Package, _, _ string, current, total int64, unit cli.Unit) {
+		feedback.Progress(FeedbackPkg, fmt.Sprintf("download %s", providerVars["repository"]), fmt.Sprintf("Downloading module %s", providerVars["repository"]), current, total, unit)
 	})
 	file, err := request.FetchFile(fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", providerVars["owner"], providerVars["repository"], fmt.Sprintf("v%s", version), downloadFileName), 0, true)
 	defer feedback.UninterceptProgress(request.FeedbackPkg)

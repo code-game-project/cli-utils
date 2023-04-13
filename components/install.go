@@ -17,6 +17,7 @@ import (
 
 	"github.com/adrg/xdg"
 
+	"github.com/code-game-project/cli-utils/cli"
 	"github.com/code-game-project/cli-utils/feedback"
 	"github.com/code-game-project/cli-utils/request"
 	"github.com/code-game-project/cli-utils/versions"
@@ -96,8 +97,8 @@ func install(componentName string, version versions.Version) (string, error) {
 		downloadFileName = fmt.Sprintf("%s-%s-%s.zip", componentName, runtime.GOOS, runtime.GOARCH)
 	}
 
-	feedback.InterceptProgress(request.FeedbackPkg, func(_ feedback.Package, _, _ string, current, total float64) {
-		feedback.Progress(FeedbackPkg, fmt.Sprintf("download %s", componentName), fmt.Sprintf("Downloading component %s (%.2fkB/%.2fkB)...", componentName, current/1000, total/1000), current, total)
+	feedback.InterceptProgress(request.FeedbackPkg, func(_ feedback.Package, _, _ string, current, total int64, unit cli.Unit) {
+		feedback.Progress(FeedbackPkg, fmt.Sprintf("download %s", componentName), fmt.Sprintf("Downloading component %s", componentName), current, total, unit)
 	})
 	file, err := request.FetchFile(fmt.Sprintf("https://github.com/code-game-project/%s/releases/download/%s/%s", componentName, tag, downloadFileName), 0, true)
 	defer feedback.UninterceptProgress(request.FeedbackPkg)

@@ -12,6 +12,7 @@ import (
 
 	"github.com/adrg/xdg"
 
+	"github.com/code-game-project/cli-utils/cli"
 	"github.com/code-game-project/cli-utils/feedback"
 
 	neturl "net/url"
@@ -31,24 +32,20 @@ var httpClient = &http.Client{
 }
 
 type reader struct {
-	r            io.ReadCloser
-	w            io.WriteCloser
-	bytesRead    int
-	lastByteRead int
-	contentSize  int64
-	url          string
-	onErr        func(err error)
+	r           io.ReadCloser
+	w           io.WriteCloser
+	bytesRead   int64
+	contentSize int64
+	url         string
+	onErr       func(err error)
 }
 
 func (r *reader) Read(p []byte) (n int, err error) {
 	n, err = r.r.Read(p)
 	if n > 0 {
 		if r.contentSize > 0 {
-			r.bytesRead += n
-			if r.lastByteRead == 0 || int64(r.bytesRead) == r.contentSize || r.bytesRead-r.lastByteRead > 100000 {
-				r.lastByteRead = r.bytesRead
-				feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s (%.2fkB/%.2fkB)...", r.url, float64(r.bytesRead)/1000, float64(r.contentSize)/1000), float64(r.bytesRead), float64(r.contentSize))
-			}
+			r.bytesRead += int64(n)
+			feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), int64(r.bytesRead), r.contentSize, cli.UnitFileSize)
 		}
 		if r.w != nil {
 			if n2, err2 := r.w.Write(p[:n]); err2 != nil {
@@ -58,6 +55,9 @@ func (r *reader) Read(p []byte) (n int, err error) {
 				return n2, err2
 			}
 		}
+	}
+	if errors.Is(err, io.EOF) {
+		feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), r.contentSize, r.contentSize, cli.UnitFileSize)
 	}
 	if err != nil && !errors.Is(err, io.EOF) {
 		if r.w != nil {
@@ -77,6 +77,7 @@ func (r *reader) Close() error {
 }
 
 func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.ReadCloser, error) {
+	reportProgress = true
 	feedback.Debug(FeedbackPkg, "Fetching %s...", url)
 	cacheFilePath := filepath.Join(httpCacheDir, neturl.PathEscape(url))
 	if cacheMaxAge > 0 {
