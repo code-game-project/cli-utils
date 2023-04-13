@@ -62,6 +62,7 @@ func (r *reader) Read(p []byte) (n int, err error) {
 	}
 	if errors.Is(err, io.EOF) {
 		feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), r.contentSize, r.contentSize, cli.UnitFileSize)
+		return n, nil
 	}
 	if err != nil && !errors.Is(err, io.EOF) {
 		if r.w != nil {
@@ -70,7 +71,7 @@ func (r *reader) Read(p []byte) (n int, err error) {
 		}
 		r.onErr(err)
 	}
-	return
+	return n, err
 }
 
 func (r *reader) Close() error {

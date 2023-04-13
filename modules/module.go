@@ -237,15 +237,19 @@ func AvailableLanguages() map[string]AvailableLanguage { // name -> display name
 	availableLanguages = make(map[string]AvailableLanguage, len(rawModules))
 
 	for n, m := range rawModules {
-		client, server, err := loadVersionMap(m.LibraryToModuleVersions)
+		type versionsObj struct {
+			Client json.RawMessage `json:"client"`
+			Server json.RawMessage `json:"server"`
+		}
+		versions, err := loadJSONObjectInlineOrLocalOrRemote[versionsObj](m.CodeGameToLibraryVersions)
 		if err != nil {
 			feedback.Error(FeedbackPkg, "Failed to load supported project types of %s module: %s", n, err)
 			continue
 		}
 		availableLanguages[n] = AvailableLanguage{
 			DisplayName:    m.DisplayName,
-			SupportsClient: len(client) > 0,
-			SupportsServer: len(server) > 0,
+			SupportsClient: versions.Client != nil,
+			SupportsServer: versions.Server != nil,
 		}
 	}
 	return availableLanguages
