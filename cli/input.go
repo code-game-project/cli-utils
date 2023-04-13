@@ -54,22 +54,23 @@ func Select(msg string, options []string) int {
 	return index
 }
 
-// SelectString asks the user to select on option. It returns the entry in options with the chosen index.
+// SelectString asks the user to select on option. It returns the value in options of the chosen key.
 // It panics if the length of displayOptions differs from the length of options.
-func SelectString(msg string, displayOptions []string, options []string) string {
-	if len(displayOptions) != len(options) {
-		panic("Lengths of displayOptions and options don't match")
+func SelectString(msg string, options map[string]string) string {
+	var chosen string
+	displayOptions := make([]string, 0, len(options))
+	for o := range options {
+		displayOptions = append(displayOptions, o)
 	}
-	var index int
 	err := survey.AskOne(&survey.Select{
 		Message: msg,
 		Options: displayOptions,
-	}, &index, survey.WithValidator(survey.Required))
+	}, &chosen, survey.WithValidator(survey.Required))
 	if err == terminal.InterruptErr {
 		sendInterrupt()
 		return ""
 	}
-	return options[index]
+	return options[chosen]
 }
 
 // MultiSelect asks the user to select an arbitrary amount of options.
