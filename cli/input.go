@@ -12,12 +12,12 @@ import (
 // ErrCanceled indicates that the user has interrupted the programm, e.g. by using Ctrl + C.
 var ErrCanceled = errors.New("canceled")
 
-// InputOrExit works like Input but exits with code 0 on ErrCanceled or code 1 on other errors.
+// InputOrExit works like Input but exits with code 2 on ErrCanceled or code 1 on other errors.
 func InputOrExit(prompt string, required bool, defaultValue string, validators ...Validator) string {
 	i, err := Input(prompt, required, defaultValue, validators...)
 	if err != nil {
 		if errors.Is(err, ErrCanceled) {
-			os.Exit(0)
+			os.Exit(2)
 		}
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
@@ -46,12 +46,12 @@ func Input(prompt string, required bool, defaultValue string, validators ...Vali
 	return result, err
 }
 
-// YesNoOrExit works like YesNo but exits with code 0 on ErrCanceled or code 1 on other errors.
+// YesNoOrExit works like YesNo but exits with code 2 on ErrCanceled or code 1 on other errors.
 func YesNoOrExit(question string, defaultValue bool) (yes bool) {
 	yes, err := YesNo(question, defaultValue)
 	if err != nil {
 		if errors.Is(err, ErrCanceled) {
-			os.Exit(0)
+			os.Exit(2)
 		}
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
@@ -71,12 +71,12 @@ func YesNo(question string, defaultValue bool) (yes bool, err error) {
 	return yes, err
 }
 
-// SelectOrExit works like Select but exits with code 0 on ErrCanceled or code 1 on other errors.
+// SelectOrExit works like Select but exits with code 2 on ErrCanceled or code 1 on other errors.
 func SelectOrExit(msg string, options []string) int {
 	index, err := Select(msg, options)
 	if err != nil {
 		if errors.Is(err, ErrCanceled) {
-			os.Exit(0)
+			os.Exit(2)
 		}
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
@@ -97,12 +97,12 @@ func Select(msg string, options []string) (int, error) {
 	return index, err
 }
 
-// SelectStringOrExit works like SelectString but exits with code 0 on ErrCanceled or code 1 on other errors.
+// SelectStringOrExit works like SelectString but exits with code 2 on ErrCanceled or code 1 on other errors.
 func SelectStringOrExit(msg string, displayOptions []string, options []string) string {
 	selected, err := SelectString(msg, displayOptions, options)
 	if err != nil {
 		if errors.Is(err, ErrCanceled) {
-			os.Exit(0)
+			os.Exit(2)
 		}
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
@@ -127,12 +127,12 @@ func SelectString(msg string, displayOptions []string, options []string) (string
 	return options[index], err
 }
 
-// MultiSelectOrExit works like SelectString but exits with code 0 on ErrCanceled or code 1 on other errors.
+// MultiSelectOrExit works like SelectString but exits with code 2 on ErrCanceled or code 1 on other errors.
 func MultiSelectOrExit(msg string, options []string, selected []int) []bool {
 	result, err := MultiSelect(msg, options, selected)
 	if err != nil {
 		if errors.Is(err, ErrCanceled) {
-			os.Exit(0)
+			os.Exit(2)
 		}
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(1)
