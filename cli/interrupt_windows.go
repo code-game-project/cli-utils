@@ -2,6 +2,12 @@
 
 package cli
 
+import (
+	"os"
+	"syscall"
+	"time"
+)
+
 func sendInterrupt() {
 	d, e := syscall.LoadDLL("kernel32.dll")
 	if e != nil {
@@ -15,4 +21,5 @@ func sendInterrupt() {
 	if r == 0 {
 		os.Exit(1)
 	}
+	time.Sleep(5 * time.Second)
 }

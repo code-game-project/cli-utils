@@ -5,6 +5,7 @@ package cli
 import (
 	"os"
 	"syscall"
+	"time"
 )
 
 func sendInterrupt() {
@@ -13,4 +14,5 @@ func sendInterrupt() {
 	if err != nil {
 		os.Exit(1)
 	}
+	time.Sleep(5 * time.Second)
 }
