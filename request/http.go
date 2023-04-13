@@ -30,16 +30,17 @@ var httpClient = &http.Client{
 	Timeout: 10 * time.Second,
 }
 
-type cacheReader struct {
+type reader struct {
 	r            io.ReadCloser
 	w            io.WriteCloser
 	bytesRead    int
 	lastByteRead int
 	contentSize  int64
 	url          string
+	onErr        func(err error)
 }
 
-func (r *cacheReader) Read(p []byte) (n int, err error) {
+func (r *reader) Read(p []byte) (n int, err error) {
 	n, err = r.r.Read(p)
 	if n > 0 {
 		if r.contentSize > 0 {
@@ -50,15 +51,25 @@ func (r *cacheReader) Read(p []byte) (n int, err error) {
 			}
 		}
 		if r.w != nil {
-			if n2, err := r.w.Write(p[:n]); err != nil {
-				return n2, err
+			if n2, err2 := r.w.Write(p[:n]); err2 != nil {
+				r.w.Close()
+				r.w = nil
+				r.onErr(err2)
+				return n2, err2
 			}
 		}
+	}
+	if err != nil && !errors.Is(err, io.EOF) {
+		if r.w != nil {
+			r.w.Close()
+			r.w = nil
+		}
+		r.onErr(err)
 	}
 	return
 }
 
-func (r *cacheReader) Close() error {
+func (r *reader) Close() error {
 	if r.w != nil {
 		r.w.Close()
 	}
@@ -124,11 +135,17 @@ func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.R
 		contentSize = 0
 	}
 
-	return &cacheReader{
+	return &reader{
 		r:           resp.Body,
 		w:           cache,
 		url:         url,
 		contentSize: contentSize,
+		onErr: func(err error) {
+			fmt.Println(err)
+			if cache != nil {
+				os.Remove(cacheFilePath)
+			}
+		},
 	}, nil
 }
 
