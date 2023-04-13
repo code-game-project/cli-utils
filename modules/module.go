@@ -224,26 +224,29 @@ type AvailableLanguage struct {
 
 var availableLanguages map[string]AvailableLanguage
 
-func AvailableLanguages() (map[string]AvailableLanguage, error) { // name -> display name
+func AvailableLanguages() map[string]AvailableLanguage { // name -> display name
 	if rawModules == nil {
 		err := loadModules()
 		if err != nil {
-			return nil, err
+			feedback.Error(FeedbackPkg, "Failed to load available languages: %s", err)
 		}
 	}
 	if availableLanguages != nil {
-		return availableLanguages, nil
+		return availableLanguages
 	}
 	availableLanguages = make(map[string]AvailableLanguage, len(rawModules))
 
 	for n, m := range rawModules {
-		var libVersions map[string]json.RawMessage
-		err := json.Unmarshal(m.LibraryToModuleVersions, &libVersions)
+		client, server, err := loadVersionMap(m.LibraryToModuleVersions)
+		if err != nil {
+			feedback.Error(FeedbackPkg, "Failed to load supported project types of %s module: %s", n, err)
+			continue
+		}
 		availableLanguages[n] = AvailableLanguage{
 			DisplayName:    m.DisplayName,
-			SupportsClient: err == nil && libVersions["client"] != nil,
-			SupportsServer: err == nil && libVersions["server"] != nil,
+			SupportsClient: len(client) > 0,
+			SupportsServer: len(server) > 0,
 		}
 	}
-	return availableLanguages, nil
+	return availableLanguages
 }
