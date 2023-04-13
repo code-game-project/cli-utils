@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/adrg/xdg v0.4.0
+	github.com/iancoleman/strcase v0.2.0
 	github.com/mattn/go-colorable v0.1.2
 	github.com/vbauerster/mpb/v8 v8.3.0
 	google.golang.org/protobuf v1.30.0
