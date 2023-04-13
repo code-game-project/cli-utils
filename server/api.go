@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/code-game-project/cli-utils/request"
+	"github.com/code-game-project/cli-utils/versions"
 )
 
 type GameInfo struct {
-	Name          string `json:"name"`
-	CGVersion     string `json:"cg_version"`
-	DisplayName   string `json:"display_name,omitempty"`
-	Description   string `json:"description,omitempty"`
-	Version       string `json:"version,omitempty"`
-	RepositoryURL string `json:"repository_url,omitempty"`
+	Name          string           `json:"name"`
+	CGVersion     versions.Version `json:"cg_version"`
+	DisplayName   string           `json:"display_name,omitempty"`
+	Description   string           `json:"description,omitempty"`
+	Version       string           `json:"version,omitempty"`
+	RepositoryURL string           `json:"repository_url,omitempty"`
 }
 
 func FetchGameInfo(gameURL string) (GameInfo, error) {
