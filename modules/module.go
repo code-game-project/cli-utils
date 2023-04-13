@@ -216,10 +216,28 @@ func loadModules() error {
 	return nil
 }
 
-func AvailableLanguages() map[string]string { // name -> display name
-	names := make(map[string]string, len(rawModules))
-	for n, m := range rawModules {
-		names[n] = m.DisplayName
+type AvailableLanguage struct {
+	DisplayName    string
+	SupportsClient bool
+	SupportsServer bool
+}
+
+var availableLanguages map[string]AvailableLanguage
+
+func AvailableLanguages() map[string]AvailableLanguage { // name -> display name
+	if availableLanguages != nil {
+		return availableLanguages
 	}
-	return names
+	availableLanguages = make(map[string]AvailableLanguage, len(rawModules))
+
+	for n, m := range rawModules {
+		var libVersions map[string]json.RawMessage
+		err := json.Unmarshal(m.LibraryToModuleVersions, &libVersions)
+		availableLanguages[n] = AvailableLanguage{
+			DisplayName:    m.DisplayName,
+			SupportsClient: err == nil && libVersions["client"] != nil,
+			SupportsServer: err == nil && libVersions["server"] != nil,
+		}
+	}
+	return availableLanguages
 }
