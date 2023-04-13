@@ -224,9 +224,15 @@ type AvailableLanguage struct {
 
 var availableLanguages map[string]AvailableLanguage
 
-func AvailableLanguages() map[string]AvailableLanguage { // name -> display name
+func AvailableLanguages() (map[string]AvailableLanguage, error) { // name -> display name
+	if rawModules == nil {
+		err := loadModules()
+		if err != nil {
+			return nil, err
+		}
+	}
 	if availableLanguages != nil {
-		return availableLanguages
+		return availableLanguages, nil
 	}
 	availableLanguages = make(map[string]AvailableLanguage, len(rawModules))
 
@@ -239,5 +245,5 @@ func AvailableLanguages() map[string]AvailableLanguage { // name -> display name
 			SupportsServer: err == nil && libVersions["server"] != nil,
 		}
 	}
-	return availableLanguages
+	return availableLanguages, nil
 }
