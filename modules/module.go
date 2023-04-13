@@ -174,7 +174,7 @@ func loadJSONObjectInlineOrLocalOrRemote[T any](jsonData json.RawMessage) (T, er
 	if err == nil {
 		if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 			file, err = request.FetchFile(uri, 24*time.Hour, false)
-			if err != nil {
+			if err != nil && !errors.Is(err, io.EOF) {
 				return object, err
 			}
 		} else {

@@ -65,7 +65,7 @@ func (p *ProviderGithub) DownloadModuleBinary(target io.Writer, providerVars map
 	})
 	file, err := request.FetchFile(fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s", providerVars["owner"], providerVars["repository"], fmt.Sprintf("v%s", version), downloadFileName), 0, true)
 	defer feedback.UninterceptProgress(request.FeedbackPkg)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
 	defer file.Close()

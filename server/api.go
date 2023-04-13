@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -30,7 +31,7 @@ func FetchGameInfo(gameURL string) (GameInfo, error) {
 func FetchCGEFile(gameURL string) (io.ReadCloser, error) {
 	baseURL := request.BaseURL("http", gameURL)
 	file, err := request.FetchFile(fmt.Sprintf("%s/api/events", baseURL), 10*time.Minute, false)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("fetch CGE file: %w", err)
 	}
 	return file, nil

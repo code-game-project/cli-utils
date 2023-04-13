@@ -102,7 +102,7 @@ func install(componentName string, version versions.Version) (string, error) {
 	})
 	file, err := request.FetchFile(fmt.Sprintf("https://github.com/code-game-project/%s/releases/download/%s/%s", componentName, tag, downloadFileName), 0, true)
 	defer feedback.UninterceptProgress(request.FeedbackPkg)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return "", fmt.Errorf("download %s: %w", componentName, err)
 	}
 	defer file.Close()

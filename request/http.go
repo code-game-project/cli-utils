@@ -61,8 +61,10 @@ func (r *reader) Read(p []byte) (n int, err error) {
 		}
 	}
 	if errors.Is(err, io.EOF) {
-		feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), r.contentSize, r.contentSize, cli.UnitFileSize)
-		return n, nil
+		if r.contentSize > 0 {
+			feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), r.contentSize, r.contentSize, cli.UnitFileSize)
+		}
+		return n, io.EOF
 	}
 	if err != nil && !errors.Is(err, io.EOF) {
 		if r.w != nil {
@@ -157,7 +159,7 @@ func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.R
 func FetchJSON[T any](url string, maxCacheAge time.Duration) (T, error) {
 	var obj T
 	file, err := FetchFile(url, maxCacheAge, false)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return obj, err
 	}
 	defer file.Close()
