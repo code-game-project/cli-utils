@@ -1,13 +1,17 @@
 package request
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/adrg/xdg"
@@ -77,7 +81,6 @@ func (r *reader) Close() error {
 }
 
 func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.ReadCloser, error) {
-	reportProgress = true
 	feedback.Debug(FeedbackPkg, "Fetching %s...", url)
 	cacheFilePath := filepath.Join(httpCacheDir, neturl.PathEscape(url))
 	if cacheMaxAge > 0 {
@@ -162,6 +165,79 @@ func FetchJSON[T any](url string, maxCacheAge time.Duration) (T, error) {
 		return obj, fmt.Errorf("decode response from '%s': %w", url, err)
 	}
 	return obj, nil
+}
+
+// TrimURL removes the protocol component and trailing slashes.
+func TrimURL(url string) string {
+	u, err := neturl.Parse(url)
+	if err != nil {
+		return url
+	}
+	u.Scheme = ""
+	return strings.TrimSuffix(u.String(), "/")
+}
+
+// BaseURL prepends `protocol + "://"` or `protocol + "s://"` to the url depending on TLS support.
+func BaseURL(protocol string, trimmedURL string, a ...any) string {
+	trimmedURL = fmt.Sprintf(trimmedURL, a...)
+	if IsTLS(trimmedURL) {
+		return protocol + "s://" + trimmedURL
+	} else {
+		return protocol + "://" + trimmedURL
+	}
+}
+
+var isTLSCache = make(map[string]bool, 0)
+
+// IsTLS verifies the TLS certificate of a trimmed URL.
+func IsTLS(trimmedURL string) (isTLS bool) {
+	if is, ok := isTLSCache[trimmedURL]; ok {
+		return is
+	}
+	defer func() {
+		isTLSCache[trimmedURL] = isTLS
+	}()
+	url, err := neturl.Parse("https://" + trimmedURL)
+	if err != nil {
+		return false
+	}
+	host := url.Host
+	if url.Port() == "" {
+		host = host + ":443"
+	}
+
+	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 5 * time.Second}, "tcp", host, &tls.Config{})
+	if err != nil {
+		return false
+	}
+	defer conn.Close()
+
+	err = conn.VerifyHostname(url.Hostname())
+	if err != nil {
+		return false
+	}
+
+	expiry := conn.ConnectionState().PeerCertificates[0].NotAfter
+	return !time.Now().After(expiry)
+}
+
+// HasContentType returns true if the 'content-type' header includes mimetype.
+func HasContentType(h http.Header, mimetype string) bool {
+	contentType := h.Get("content-type")
+	if contentType == "" {
+		return mimetype == "application/octet-stream"
+	}
+
+	for _, v := range strings.Split(contentType, ",") {
+		t, _, err := mime.ParseMediaType(v)
+		if err != nil {
+			break
+		}
+		if t == mimetype {
+			return true
+		}
+	}
+	return false
 }
 
 func saveETag(url string, resp *http.Response) error {
