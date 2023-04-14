@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/mattn/go-colorable"
@@ -29,6 +30,7 @@ const (
 	MagentaBold Color = "\x1b[1;35m"
 	CyanBold    Color = "\x1b[1;36m"
 	WhiteBold   Color = "\x1b[1;37m"
+	WhiteDim    Color = "\x1b[2;37m"
 )
 
 var (
@@ -113,4 +115,16 @@ func Error(format string, a ...any) {
 
 func Clear() {
 	fmt.Fprintf(out, "\033[H\033[2J")
+}
+
+func SetColor(color Color) {
+	fmt.Fprint(out, color)
+}
+
+func ResetColor() {
+	fmt.Fprint(out, Reset)
+}
+
+func Output() io.Writer {
+	return out
 }
