@@ -44,8 +44,8 @@ var (
 type Unit int
 
 const (
-	UnitNone     Unit = 0
-	UnitFileSize Unit = decor.UnitKiB
+	UnitNone Unit = iota
+	UnitFileSize
 )
 
 type progressBar struct {
@@ -73,7 +73,7 @@ func Progress(key, message string, current, total int64, unit Unit) {
 
 		decorators := make([]decor.Decorator, 0, 1)
 		if unit == UnitFileSize {
-			decorators = append(decorators, decor.Counters(int(unit), "%.1f / %.1f"))
+			decorators = append(decorators, decor.Counters(decor.SizeB1024(0), "%.1f / %.1f"))
 		}
 		decorators = append(decorators, decor.NewPercentage("  %.2f"))
 

@@ -7,7 +7,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/mattn/go-colorable v0.1.13
-	github.com/vbauerster/mpb/v8 v8.3.0
+	github.com/vbauerster/mpb/v8 v8.4.0
 	google.golang.org/protobuf v1.30.0
 )
 
