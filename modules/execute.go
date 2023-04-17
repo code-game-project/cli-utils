@@ -52,18 +52,18 @@ func execInfo(modulePath string) (ModuleInfo, error) {
 	return resp, nil
 }
 
-func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion versions.Version) error {
+func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion versions.Version) (modVersion versions.Version, err error) {
 	libraryVersion, err := m.findLibraryVersionByCGVersion(ProjectType_CLIENT, cgVersion)
 	if err != nil {
-		return ErrUnsupportedCodeGameVersion
+		return nil, ErrUnsupportedCodeGameVersion
 	}
-	modVersion, err := m.findCompatibleModuleVersion(ProjectType_CLIENT, libraryVersion)
+	modVersion, err = m.findCompatibleModuleVersion(ProjectType_CLIENT, libraryVersion)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	libVersionStr := libraryVersion.String()
-	return m.execute(modVersion, ProjectType_CLIENT, ActionCreate, &ActionCreateData{
+	return modVersion, m.execute(modVersion, ProjectType_CLIENT, ActionCreate, &ActionCreateData{
 		Language:       language,
 		GameName:       gameName,
 		ProjectType:    ProjectType_CLIENT,
@@ -72,12 +72,12 @@ func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion 
 	})
 }
 
-func (m *Module) ExecCreateServer(gameName, language string) error {
-	modVersion, err := m.findLatestModuleVersion(ProjectType_SERVER)
+func (m *Module) ExecCreateServer(gameName, language string) (modVersion versions.Version, err error) {
+	modVersion, err = m.findLatestModuleVersion(ProjectType_SERVER)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return m.execute(modVersion, ProjectType_SERVER, ActionCreate, &ActionCreateData{
+	return modVersion, m.execute(modVersion, ProjectType_SERVER, ActionCreate, &ActionCreateData{
 		Language:    language,
 		GameName:    gameName,
 		ProjectType: ProjectType_SERVER,
