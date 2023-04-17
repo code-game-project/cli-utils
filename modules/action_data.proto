@@ -11,6 +11,39 @@ message action_create_data {
 	ProjectType projectType = 1;
 	string language = 2;
 	string gameName = 3;
+
+	// only needed for clients
 	optional string url = 4; // only needed for clients
-	optional string libraryVersion = 5; // empty -> use latest
+
+	// empty -> use latest
+	optional string libraryVersion = 5;
+}
+
+message action_run_client_data {
+	string language = 1;
+
+	// command line args to pass to the program
+	repeated string args = 2;
+
+	string gameURL = 3;
+
+	// empty -> create
+	optional string gameID = 4;
+	// needed if game is protected and player ID is empty and spectate is false
+	optional string joinSecret = 5;
+	// empty -> create player
+	optional string playerID = 6;
+	// needed if playerID is not empty
+	optional string playerSecret = 7;
+	// creates new player; needed if player ID is empty
+	optional string username = 8;
+	// spectates the game
+	bool spectate = 9;
+}
+
+message action_run_server_data {
+	string language = 1;
+	// command line args to pass to the program
+	repeated string args = 2;
+	optional int32 port = 3;
 }

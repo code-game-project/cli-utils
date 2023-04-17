@@ -21,6 +21,32 @@ func GetCreateData() *ActionCreateData {
 	return message
 }
 
+func GetRunClientData() *ActionRunClientData {
+	data, err := readActionData()
+	if err != nil {
+		panic(err)
+	}
+	message := &ActionRunClientData{}
+	err = proto.Unmarshal(data, message)
+	if err != nil {
+		panic(err)
+	}
+	return message
+}
+
+func GetRunServerData() *ActionRunServerData {
+	data, err := readActionData()
+	if err != nil {
+		panic(err)
+	}
+	message := &ActionRunServerData{}
+	err = proto.Unmarshal(data, message)
+	if err != nil {
+		panic(err)
+	}
+	return message
+}
+
 func readActionData() ([]byte, error) {
 	path := os.Getenv("CG_MODULE_ACTION_DATA_FILE")
 	file, err := os.Open(path)
