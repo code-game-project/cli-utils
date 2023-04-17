@@ -7,17 +7,19 @@ import (
 	"path/filepath"
 
 	"github.com/code-game-project/cli-utils/feedback"
+	"github.com/code-game-project/cli-utils/versions"
 )
 
 const FeedbackPkg = feedback.Package("cgfile")
 
 type CodeGameFileData struct {
-	Game        string         `json:"game"`
-	GameVersion string         `json:"game_version,omitempty"`
-	Type        string         `json:"type"`
-	Lang        string         `json:"lang"`
-	LangConfig  map[string]any `json:"lang_config,omitempty"`
-	URL         string         `json:"url,omitempty"`
+	Game        string           `json:"game"`
+	GameVersion string           `json:"game_version,omitempty"`
+	Type        string           `json:"type"`
+	Lang        string           `json:"lang"`
+	LangConfig  map[string]any   `json:"lang_config,omitempty"`
+	URL         string           `json:"url,omitempty"`
+	ModVersion  versions.Version `json:"mod_version"`
 }
 
 func Load(projectRoot string) (*CodeGameFileData, error) {
