@@ -66,6 +66,9 @@ func ListSessions() (map[string][]Session, error) {
 func ListSessionsByGame(gameURL string) ([]Session, error) {
 	sessionFiles, err := os.ReadDir(filepath.Join(sessionsPath, escape(gameURL)))
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return make([]Session, 0), nil
+		}
 		return nil, err
 	}
 	sessions := make([]Session, 0, len(sessionFiles))
