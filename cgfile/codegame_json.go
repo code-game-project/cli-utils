@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/code-game-project/cli-utils/feedback"
+	"github.com/code-game-project/cli-utils/request"
 	"github.com/code-game-project/cli-utils/versions"
 )
 
@@ -25,7 +26,7 @@ type CodeGameFileData struct {
 func Load(projectRoot string) (*CodeGameFileData, error) {
 	file, err := os.Open(filepath.Join(projectRoot, ".codegame.json"))
 	if err != nil {
-		return nil, fmt.Errorf("open .codegame.json: %w", err)
+		return nil, err
 	}
 	defer file.Close()
 
@@ -36,6 +37,7 @@ func Load(projectRoot string) (*CodeGameFileData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("decode .codegame.json: %w", err)
 	}
+	data.GameURL = request.TrimURL(data.GameURL)
 
 	return data, nil
 }
