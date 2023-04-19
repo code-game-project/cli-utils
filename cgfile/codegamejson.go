@@ -20,7 +20,7 @@ type CodeGameFileData struct {
 	Language    string           `json:"language"`
 	LangConfig  map[string]any   `json:"lang_config,omitempty"`
 	GameURL     string           `json:"game_url,omitempty"`
-	ModVersion  versions.Version `json:"mod_version"`
+	ModVersion  versions.Version `json:"mod_version,omitempty"`
 }
 
 func Load(projectRoot string) (*CodeGameFileData, error) {
