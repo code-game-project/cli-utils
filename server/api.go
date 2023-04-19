@@ -76,3 +76,33 @@ func CreatePlayer(gameURL, gameID, username, joinSecret string) (playerID, playe
 	}
 	return resp.PlayerID, resp.PlayerSecret, nil
 }
+
+type Game struct {
+	ID        string `json:"id"`
+	Players   int    `json:"players"`
+	Protected bool   `json:"protected"`
+}
+
+func FetchGames(gameURL string, allowProtected bool) (private int, public []Game, err error) {
+	type response struct {
+		Private int    `json:"private"`
+		Public  []Game `json:"public"`
+	}
+	var query string
+	if !allowProtected {
+		query = "?protected=false"
+	}
+	resp, err := request.FetchJSON[response](request.BaseURL("http", gameURL)+"/api/games"+query, 0)
+	if err != nil {
+		return 0, nil, fmt.Errorf("fetch games: %w", err)
+	}
+	return resp.Private, resp.Public, nil
+}
+
+func FetchGame(gameURL, gameID string) (Game, error) {
+	resp, err := request.FetchJSON[Game](request.BaseURL("http", gameURL)+"/api/games/"+gameID, 0)
+	if err != nil {
+		return Game{}, fmt.Errorf("fetch game: %w", err)
+	}
+	return resp, nil
+}
