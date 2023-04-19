@@ -84,16 +84,14 @@ func (m *Module) ExecCreateServer(gameName, language string) (modVersion version
 	})
 }
 
-func (m *Module) ExecRunClient(modVersion versions.Version, gameURL, language string, gameID, joinSecret, playerID, playerSecret, username *string, spectate bool, args []string) error {
+func (m *Module) ExecRunClient(modVersion versions.Version, gameURL, language, gameID string, playerID, playerSecret *string, spectate bool, args []string) error {
 	return m.execute(modVersion, ProjectType_CLIENT, ActionRunClient, &ActionRunClientData{
 		GameURL:      gameURL,
 		Language:     language,
 		Args:         args,
 		GameID:       gameID,
-		JoinSecret:   joinSecret,
 		PlayerID:     playerID,
 		PlayerSecret: playerSecret,
-		Username:     username,
 		Spectate:     spectate,
 	})
 }

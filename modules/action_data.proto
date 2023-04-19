@@ -26,19 +26,13 @@ message action_run_client_data {
 	repeated string args = 2;
 
 	string gameURL = 3;
+	string gameID = 4;
+	bool spectate = 5;
 
-	// empty -> create
-	optional string gameID = 4;
-	// needed if game is protected and player ID is empty and spectate is false
-	optional string joinSecret = 5;
-	// empty -> create player
+	// needed if spectate is false
 	optional string playerID = 6;
-	// needed if playerID is not empty
+	// needed if spectate is false
 	optional string playerSecret = 7;
-	// creates new player; needed if player ID is empty
-	optional string username = 8;
-	// spectates the game
-	bool spectate = 9;
 }
 
 message action_run_server_data {
