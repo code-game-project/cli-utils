@@ -13,12 +13,12 @@ import (
 const FeedbackPkg = feedback.Package("cgfile")
 
 type CodeGameFileData struct {
-	Game        string           `json:"game"`
+	GameName    string           `json:"game_name"`
 	GameVersion string           `json:"game_version,omitempty"`
-	Type        string           `json:"type"`
-	Lang        string           `json:"lang"`
+	ProjectType string           `json:"project_type"`
+	Language    string           `json:"language"`
 	LangConfig  map[string]any   `json:"lang_config,omitempty"`
-	URL         string           `json:"url,omitempty"`
+	GameURL     string           `json:"game_url,omitempty"`
 	ModVersion  versions.Version `json:"mod_version"`
 }
 
