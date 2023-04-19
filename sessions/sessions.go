@@ -51,7 +51,7 @@ func ListSessions() (map[string][]Session, error) {
 		if !dir.IsDir() {
 			continue
 		}
-		gameURL := unescapeGameURL(dir.Name())
+		gameURL := unescape(dir.Name())
 		sessions, err := ListSessionsByGame(gameURL)
 		if err != nil {
 			continue
@@ -64,7 +64,7 @@ func ListSessions() (map[string][]Session, error) {
 
 // ListSessionsByGame returns a list of sessions for the game.
 func ListSessionsByGame(gameURL string) ([]Session, error) {
-	sessionFiles, err := os.ReadDir(filepath.Join(sessionsPath, escapeGameURL(gameURL)))
+	sessionFiles, err := os.ReadDir(filepath.Join(sessionsPath, escape(gameURL)))
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func ListSessionsByGame(gameURL string) ([]Session, error) {
 		if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
 			continue
 		}
-		session, err := LoadSession(gameURL, strings.TrimSuffix(file.Name(), ".json"))
+		session, err := LoadSession(gameURL, unescape(strings.TrimSuffix(file.Name(), ".json")))
 		if err != nil {
 			continue
 		}
@@ -94,7 +94,7 @@ func ListGames() ([]string, error) {
 		if !dir.IsDir() {
 			continue
 		}
-		result = append(result, unescapeGameURL(dir.Name()))
+		result = append(result, unescape(dir.Name()))
 	}
 
 	return result, nil
@@ -102,7 +102,7 @@ func ListGames() ([]string, error) {
 
 // Load a session from the session store.
 func LoadSession(gameURL, playerID string) (Session, error) {
-	data, err := os.ReadFile(filepath.Join(sessionsPath, escapeGameURL(gameURL), playerID+".json"))
+	data, err := os.ReadFile(filepath.Join(sessionsPath, escape(gameURL), escape(playerID)+".json"))
 	if err != nil {
 		return Session{}, err
 	}
@@ -123,7 +123,7 @@ func (s Session) Save() error {
 	if s.PlayerID == "" {
 		return errors.New("empty player id")
 	}
-	dir := filepath.Join(sessionsPath, escapeGameURL(s.GameURL))
+	dir := filepath.Join(sessionsPath, escape(s.GameURL))
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (s Session) Save() error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(dir, s.PlayerID+".json"), data, 0o644)
+	return os.WriteFile(filepath.Join(dir, escape(s.PlayerID)+".json"), data, 0o644)
 }
 
 // Remove the session from the session store.
@@ -145,8 +145,8 @@ func (s Session) Remove() error {
 	if s.PlayerID == "" {
 		return nil
 	}
-	dir := filepath.Join(sessionsPath, escapeGameURL(s.GameURL))
-	err := os.Remove(filepath.Join(dir, s.PlayerID+".json"))
+	dir := filepath.Join(sessionsPath, escape(s.GameURL))
+	err := os.Remove(filepath.Join(dir, escape(s.PlayerID)+".json"))
 	if err != nil {
 		return err
 	}
@@ -158,14 +158,14 @@ func (s Session) Remove() error {
 	return nil
 }
 
-func escapeGameURL(gameURL string) string {
-	return base64.RawStdEncoding.EncodeToString([]byte(gameURL))
+func escape(s string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(s))
 }
 
-func unescapeGameURL(escapedGameURL string) string {
-	gameURL, err := base64.RawURLEncoding.DecodeString(escapedGameURL)
+func unescape(s string) string {
+	gameURL, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
-		return escapedGameURL
+		return s
 	}
 	return string(gameURL)
 }
