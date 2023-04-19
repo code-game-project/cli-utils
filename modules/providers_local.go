@@ -3,7 +3,6 @@ package modules
 import (
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/code-game-project/cli-utils/versions"
 )
@@ -75,17 +74,17 @@ func (m *Module) loadLocalModulePath(path string) error {
 		return fmt.Errorf("receive module version of '%s': %w", path, err)
 	}
 
-	id := strconv.Itoa(len(m.installedExecutables))
+	version := info.Version.String()
 	for _, v := range info.LibraryVersions["client"] {
 		if _, ok := m.clientLibToModVersions[v.String()]; !ok {
-			m.clientLibToModVersions[v.String()] = id
+			m.clientLibToModVersions[v.String()] = version
 		}
 	}
 	for _, v := range info.LibraryVersions["server"] {
 		if _, ok := m.serverLibToModVersions[v.String()]; !ok {
-			m.serverLibToModVersions[v.String()] = id
+			m.serverLibToModVersions[v.String()] = version
 		}
 	}
-	m.installedExecutables[id] = path
+	m.installedExecutables[version] = path
 	return nil
 }
