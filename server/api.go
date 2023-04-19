@@ -36,3 +36,43 @@ func FetchCGEFile(gameURL string) (io.ReadCloser, error) {
 	}
 	return file, nil
 }
+
+func CreateGame(gameURL string, public, protected bool, config any) (gameID, joinSecret string, err error) {
+	type req struct {
+		Public    bool `json:"public"`
+		Protected bool `json:"protected"`
+		Config    any  `json:"config"`
+	}
+	type response struct {
+		GameID     string `json:"game_id"`
+		JoinSecret string `json:"join_secret"`
+	}
+	resp, err := request.PostJSON[response](request.BaseURL("http", gameURL)+"/api/games", req{
+		Public:    public,
+		Protected: protected,
+		Config:    config,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("create game: %w", err)
+	}
+	return resp.GameID, resp.JoinSecret, nil
+}
+
+func CreatePlayer(gameURL, gameID, username, joinSecret string) (playerID, playerSecret string, err error) {
+	type req struct {
+		Username   string `json:"username"`
+		JoinSecret string `json:"join_secret,omitempty"`
+	}
+	type response struct {
+		PlayerID     string `json:"player_id"`
+		PlayerSecret string `json:"player_secret"`
+	}
+	resp, err := request.PostJSON[response](request.BaseURL("http", gameURL)+"/api/games/"+gameID+"/players", req{
+		Username:   username,
+		JoinSecret: joinSecret,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("create player: %w", err)
+	}
+	return resp.PlayerID, resp.PlayerSecret, nil
+}

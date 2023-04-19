@@ -1,6 +1,7 @@
 package request
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -41,6 +42,7 @@ type reader struct {
 	bytesRead   int64
 	contentSize int64
 	url         string
+	method      string
 	onErr       func(err error)
 }
 
@@ -49,7 +51,7 @@ func (r *reader) Read(p []byte) (n int, err error) {
 	if n > 0 {
 		if r.contentSize > 0 {
 			r.bytesRead += int64(n)
-			feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), int64(r.bytesRead), r.contentSize, cli.UnitFileSize)
+			feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s %s", r.method, r.url), fmt.Sprintf("Fetching %s %s", r.method, r.url), int64(r.bytesRead), r.contentSize, cli.UnitFileSize)
 		}
 		if r.w != nil {
 			if n2, err2 := r.w.Write(p[:n]); err2 != nil {
@@ -62,7 +64,7 @@ func (r *reader) Read(p []byte) (n int, err error) {
 	}
 	if errors.Is(err, io.EOF) {
 		if r.contentSize > 0 {
-			feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s", r.url), fmt.Sprintf("Fetching %s", r.url), r.contentSize, r.contentSize, cli.UnitFileSize)
+			feedback.Progress(FeedbackPkg, fmt.Sprintf("fetch %s %s", r.method, r.url), fmt.Sprintf("Fetching %s %s", r.method, r.url), r.contentSize, r.contentSize, cli.UnitFileSize)
 		}
 		return n, io.EOF
 	}
@@ -83,8 +85,8 @@ func (r *reader) Close() error {
 	return r.r.Close()
 }
 
-func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.ReadCloser, error) {
-	feedback.Debug(FeedbackPkg, "Fetching %s...", url)
+func Fetch(url, method string, cacheMaxAge time.Duration, reportProgress bool, body io.Reader) (io.ReadCloser, error) {
+	feedback.Debug(FeedbackPkg, "Fetching %s %s...", strings.ToUpper(method), url)
 	cacheFilePath := filepath.Join(httpCacheDir, neturl.PathEscape(url))
 	if cacheMaxAge > 0 {
 		if stat, err := os.Stat(cacheFilePath); err == nil && time.Since(stat.ModTime()) <= cacheMaxAge {
@@ -96,7 +98,7 @@ func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.R
 		}
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, fmt.Errorf("create http request: %w", err)
 	}
@@ -120,7 +122,7 @@ func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.R
 	}
 	if resp.StatusCode >= 300 {
 		resp.Body.Close()
-		return nil, fmt.Errorf("fetch '%s': status '%s'", url, resp.Status)
+		return nil, fmt.Errorf("fetch %s %s: status '%s'", method, url, resp.Status)
 	}
 	saveETag(url, resp)
 
@@ -156,10 +158,32 @@ func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.R
 	}, nil
 }
 
+func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.ReadCloser, error) {
+	return Fetch(url, "GET", cacheMaxAge, reportProgress, nil)
+}
+
 func FetchJSON[T any](url string, maxCacheAge time.Duration) (T, error) {
 	var obj T
 	file, err := FetchFile(url, maxCacheAge, false)
 	if err != nil && !errors.Is(err, io.EOF) {
+		return obj, err
+	}
+	defer file.Close()
+	err = json.NewDecoder(file).Decode(&obj)
+	if err != nil {
+		return obj, fmt.Errorf("decode response from '%s': %w", url, err)
+	}
+	return obj, nil
+}
+
+func PostJSON[T any](url string, data any) (T, error) {
+	var obj T
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return obj, fmt.Errorf("marshal json payload for '%s': %w", url, err)
+	}
+	file, err := Fetch(url, "POST", 0, false, bytes.NewBuffer(buf))
+	if err != nil {
 		return obj, err
 	}
 	defer file.Close()
