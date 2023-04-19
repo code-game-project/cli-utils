@@ -23,9 +23,10 @@ const (
 )
 
 type ModuleInfo struct {
-	Actions          []Action                      `json:"actions"`
-	LibraryVersions  map[string][]versions.Version `json:"library_versions"`
-	ApplicationTypes []string                      `json:"application_types"`
+	Version         versions.Version
+	Actions         []Action                      `json:"actions"`
+	LibraryVersions map[string][]versions.Version `json:"library_versions"`
+	ProjectTypes    []string                      `json:"project_types"`
 }
 
 func execInfo(modulePath string) (ModuleInfo, error) {
@@ -46,7 +47,7 @@ func execInfo(modulePath string) (ModuleInfo, error) {
 	if resp.LibraryVersions == nil {
 		return ModuleInfo{}, fmt.Errorf("invalid info response: missing 'library_versions' field")
 	}
-	if resp.ApplicationTypes == nil {
+	if resp.ProjectTypes == nil {
 		return ModuleInfo{}, fmt.Errorf("invalid info response: missing 'application_types' field")
 	}
 	return resp, nil
