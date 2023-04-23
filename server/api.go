@@ -106,3 +106,22 @@ func FetchGame(gameURL, gameID string) (Game, error) {
 	}
 	return resp, nil
 }
+
+func FetchPlayers(gameURL, gameID string) (map[string]string, error) {
+	resp, err := request.FetchJSON[map[string]string](request.BaseURL("http", gameURL)+"/api/games/"+gameID+"/players", 0)
+	if err != nil {
+		return nil, fmt.Errorf("fetch player username: %w", err)
+	}
+	return resp, nil
+}
+
+func FetchUsername(gameURL, gameID, playerID string) (string, error) {
+	type response struct {
+		Username string `json:"username"`
+	}
+	resp, err := request.FetchJSON[response](request.BaseURL("http", gameURL)+"/api/games/"+gameID+"/players/"+playerID, 1*time.Minute)
+	if err != nil {
+		return "", fmt.Errorf("fetch player username: %w", err)
+	}
+	return resp.Username, nil
+}
