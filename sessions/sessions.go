@@ -187,14 +187,16 @@ func Clean() error {
 	if err != nil {
 		return fmt.Errorf("list sessions: %w", err)
 	}
-	var wg *sync.WaitGroup
+	var wg sync.WaitGroup
 	for _, sessions := range allSessions {
 		for _, ses := range sessions {
 			s := ses
 			wg.Add(1)
 			go func() {
 				valid, err := s.Check()
-				if err == nil && !valid {
+				if err != nil {
+					feedback.Error(FeedbackPkg, "Failed to delete invalid session: %s", err)
+				} else if !valid {
 					s.Remove()
 				}
 				wg.Done()
