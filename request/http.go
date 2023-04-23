@@ -85,7 +85,7 @@ func (r *reader) Close() error {
 	return r.r.Close()
 }
 
-func Fetch(url, method string, cacheMaxAge time.Duration, reportProgress bool, body io.Reader) (io.ReadCloser, error) {
+func Fetch(url, method string, cacheMaxAge time.Duration, reportProgress bool, body io.Reader) (responseBody io.ReadCloser, statusCode int, err error) {
 	feedback.Debug(FeedbackPkg, "Fetching %s %s...", strings.ToUpper(method), url)
 	cacheFilePath := filepath.Join(httpCacheDir, neturl.PathEscape(url))
 	if cacheMaxAge > 0 {
@@ -93,14 +93,14 @@ func Fetch(url, method string, cacheMaxAge time.Duration, reportProgress bool, b
 			file, err := os.Open(cacheFilePath)
 			if err == nil {
 				feedback.Debug(FeedbackPkg, "Found in cache.")
-				return file, nil
+				return file, 0, nil
 			}
 		}
 	}
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, fmt.Errorf("create http request: %w", err)
+		return nil, 0, fmt.Errorf("create http request: %w", err)
 	}
 	if _, err = os.Stat(cacheFilePath); err == nil {
 		loadETag(url, req)
@@ -115,26 +115,27 @@ func Fetch(url, method string, cacheMaxAge time.Duration, reportProgress bool, b
 			} else {
 				feedback.Debug(FeedbackPkg, "Offline. Using cached version.")
 			}
-			return file, nil
+			return file, 0, nil
 		}
 		os.Remove(filepath.Join(etagCacheDir, neturl.PathEscape(url)))
-		return nil, fmt.Errorf("fetch data: %w", err)
+		return nil, 0, fmt.Errorf("fetch data: %w", err)
 	}
 	if resp.StatusCode >= 300 {
-		resp.Body.Close()
-		return nil, fmt.Errorf("fetch %s %s: status '%s'", method, url, resp.Status)
+		statusCode = resp.StatusCode
+		cacheMaxAge = 0
+	} else {
+		saveETag(url, resp)
 	}
-	saveETag(url, resp)
 
 	var cache io.WriteCloser
 	if cacheMaxAge > 0 {
 		err := os.MkdirAll(httpCacheDir, 0o755)
 		if err != nil {
-			return nil, fmt.Errorf("create cache directory: %w", err)
+			return nil, 0, fmt.Errorf("create cache directory: %w", err)
 		}
 		file, err := os.Create(cacheFilePath)
 		if err != nil {
-			return nil, fmt.Errorf("create cache file: %w", err)
+			return nil, 0, fmt.Errorf("create cache file: %w", err)
 		}
 		cache = file
 	}
@@ -149,17 +150,24 @@ func Fetch(url, method string, cacheMaxAge time.Duration, reportProgress bool, b
 		w:           cache,
 		url:         url,
 		contentSize: contentSize,
-		onErr: func(err error) {
-			fmt.Println(err)
+		onErr: func(_ error) {
 			if cache != nil {
 				os.Remove(cacheFilePath)
 			}
 		},
-	}, nil
+	}, statusCode, nil
 }
 
 func FetchFile(url string, cacheMaxAge time.Duration, reportProgress bool) (io.ReadCloser, error) {
-	return Fetch(url, "GET", cacheMaxAge, reportProgress, nil)
+	body, status, err := Fetch(url, "GET", cacheMaxAge, reportProgress, nil)
+	if err != nil {
+		return nil, err
+	}
+	if status >= 300 {
+		body.Close()
+		return nil, fmt.Errorf("http status: %s", http.StatusText(status))
+	}
+	return body, nil
 }
 
 func FetchJSON[T any](url string, maxCacheAge time.Duration) (T, error) {
@@ -182,9 +190,13 @@ func PostJSON[T any](url string, data any) (T, error) {
 	if err != nil {
 		return obj, fmt.Errorf("marshal json payload for '%s': %w", url, err)
 	}
-	file, err := Fetch(url, "POST", 0, false, bytes.NewBuffer(buf))
+	file, status, err := Fetch(url, "POST", 0, false, bytes.NewBuffer(buf))
 	if err != nil {
 		return obj, err
+	}
+	if status >= 300 {
+		file.Close()
+		return obj, fmt.Errorf("http status: %s", http.StatusText(status))
 	}
 	defer file.Close()
 	err = json.NewDecoder(file).Decode(&obj)

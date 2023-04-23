@@ -4,13 +4,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/adrg/xdg"
 
 	"github.com/code-game-project/cli-utils/feedback"
+	"github.com/code-game-project/cli-utils/request"
 )
 
 const FeedbackPkg = feedback.Package("sessions")
@@ -140,6 +144,22 @@ func (s Session) Save() error {
 	return os.WriteFile(filepath.Join(dir, escape(s.PlayerID)+".json"), data, 0o644)
 }
 
+// Check returns true if the player still exists in the game.
+func (s Session) Check() (bool, error) {
+	body, status, err := request.Fetch(request.BaseURL("http", s.GameURL)+"/api/games/"+s.GameID+"/players/"+s.PlayerID, "GET", 0, false, nil)
+	if err != nil {
+		return false, err
+	}
+	body.Close()
+	if status >= 300 {
+		if status == 404 {
+			return false, nil
+		}
+		return false, fmt.Errorf("http status: %s", http.StatusText(status))
+	}
+	return true, nil
+}
+
 // Remove the session from the session store.
 func (s Session) Remove() error {
 	if s.GameURL == "" {
@@ -158,6 +178,30 @@ func (s Session) Remove() error {
 	if err == nil && len(dirs) == 0 {
 		os.Remove(dir)
 	}
+	return nil
+}
+
+// Clean removes all sessions that no longer exist on the game server.
+func Clean() error {
+	allSessions, err := ListSessions()
+	if err != nil {
+		return fmt.Errorf("list sessions: %w", err)
+	}
+	var wg *sync.WaitGroup
+	for _, sessions := range allSessions {
+		for _, ses := range sessions {
+			s := ses
+			wg.Add(1)
+			go func() {
+				valid, err := s.Check()
+				if err == nil && !valid {
+					s.Remove()
+				}
+				wg.Done()
+			}()
+		}
+	}
+	wg.Wait()
 	return nil
 }
 
