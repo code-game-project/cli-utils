@@ -29,7 +29,7 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 	var binPath string
 	if p, ok := m.installedExecutables[version.String()]; ok {
 		binPath = p
-	} else {
+	} else if m.provider.Name() != "local" {
 		tempBinPath := filepath.Join(dirName, strings.ReplaceAll(moduleVersion.String(), ".", "-")+".temp")
 		file, err := os.OpenFile(tempBinPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o755)
 		if err != nil {
@@ -54,6 +54,8 @@ func (m *Module) install(moduleVersion versions.Version) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("create module binary file: %w", err)
 		}
+	} else {
+		return "", fmt.Errorf("no matching binary found")
 	}
 
 	return binPath, nil
