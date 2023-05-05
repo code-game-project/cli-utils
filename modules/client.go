@@ -21,6 +21,19 @@ func GetCreateData() *ActionCreateData {
 	return message
 }
 
+func GetUpdateData() *ActionUpdateData {
+	data, err := readActionData()
+	if err != nil {
+		panic(err)
+	}
+	message := &ActionUpdateData{}
+	err = proto.Unmarshal(data, message)
+	if err != nil {
+		panic(err)
+	}
+	return message
+}
+
 func GetRunClientData() *ActionRunClientData {
 	data, err := readActionData()
 	if err != nil {

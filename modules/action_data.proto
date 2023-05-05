@@ -13,10 +13,20 @@ message action_create_data {
 	string gameName = 3;
 
 	// only needed for clients
-	optional string url = 4; // only needed for clients
+	optional string gameURL = 4;
 
 	// empty -> use latest
 	optional string libraryVersion = 5;
+}
+
+message action_update_data {
+	ProjectType projectType = 1;
+	string language = 2;
+
+	// only needed for clients
+	optional string gameURL = 3;
+	// empty -> use latest
+	optional string libraryVersion = 4;
 }
 
 message action_run_client_data {

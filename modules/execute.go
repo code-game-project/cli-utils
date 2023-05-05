@@ -53,6 +53,14 @@ func execInfo(modulePath string) (ModuleInfo, error) {
 	return resp, nil
 }
 
+func (m *Module) ExecInfo(modVersion versions.Version) (ModuleInfo, error) {
+	path, err := m.install(modVersion)
+	if err != nil {
+		return ModuleInfo{}, fmt.Errorf("install module: %w", err)
+	}
+	return execInfo(path)
+}
+
 func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion versions.Version) (modVersion versions.Version, err error) {
 	libraryVersion, err := m.findLibraryVersionByCGVersion(ProjectType_CLIENT, cgVersion)
 	if err != nil {
@@ -68,7 +76,7 @@ func (m *Module) ExecCreateClient(gameName, gameURL, language string, cgVersion 
 		Language:       language,
 		GameName:       gameName,
 		ProjectType:    ProjectType_CLIENT,
-		Url:            &gameURL,
+		GameURL:        &gameURL,
 		LibraryVersion: &libVersionStr,
 	})
 }
@@ -82,6 +90,35 @@ func (m *Module) ExecCreateServer(gameName, language string) (modVersion version
 		Language:    language,
 		GameName:    gameName,
 		ProjectType: ProjectType_SERVER,
+	})
+}
+
+func (m *Module) ExecUpdateClient(language, gameURL string, cgVersion versions.Version) (modVersion versions.Version, err error) {
+	libraryVersion, err := m.findLibraryVersionByCGVersion(ProjectType_CLIENT, cgVersion)
+	if err != nil {
+		return nil, ErrUnsupportedCodeGameVersion
+	}
+	modVersion, err = m.findCompatibleModuleVersion(ProjectType_CLIENT, libraryVersion)
+	if err != nil {
+		return nil, err
+	}
+	libVersionStr := libraryVersion.String()
+	return modVersion, m.execute(modVersion, ProjectType_CLIENT, ActionUpdate, &ActionUpdateData{
+		ProjectType:    ProjectType_CLIENT,
+		Language:       language,
+		GameURL:        &gameURL,
+		LibraryVersion: &libVersionStr,
+	})
+}
+
+func (m *Module) ExecUpdateServer(language, gameURL string, cgVersion versions.Version) (modVersion versions.Version, err error) {
+	modVersion, err = m.findLatestModuleVersion(ProjectType_CLIENT)
+	if err != nil {
+		return nil, ErrUnsupportedCodeGameVersion
+	}
+	return modVersion, m.execute(modVersion, ProjectType_CLIENT, ActionUpdate, &ActionUpdateData{
+		ProjectType: ProjectType_CLIENT,
+		Language:    language,
 	})
 }
 
